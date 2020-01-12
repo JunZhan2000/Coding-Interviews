@@ -16,11 +16,9 @@ public class Main {
                 arrays[i][j] = i * 10 + j;
             }
         }
-        Boolean bool = Find2(18, arrays);
-        System.out.println(bool);
     }
 
-    //最优解？
+    //最优解？: 对二维数组的二分法
     public boolean Find(int target, int[][] array) {
         int row = array.length - 1, column = 0;  //左下角数字所在的行数和列数
 
@@ -39,8 +37,6 @@ public class Main {
 
 
     //暴力枚举
-    //运行时间：204ms
-    //占用内存：17320k
     public boolean Find1(int target, int[][] array) {
         for (int i = 0; i < array.length; i++) {
             for (int j = 0; j < array[0].length; j++) {
@@ -54,8 +50,6 @@ public class Main {
     }
 
     //分组，每组采用二分法
-    //运行时间：202ms
-    //占用内存：18496k
     public static boolean Find2(int target, int[][] array) {
         for (int[] nums : array) {
             int head = 0, fail = array[0].length - 1, mid = (head + fail) / 2;
