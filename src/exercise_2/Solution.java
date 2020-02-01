@@ -4,14 +4,10 @@
 
 package exercise_2;
 
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-
-public class Main {
+public class Solution {
     public static void main(String[] args){
-        System.out.println(new Main().replaceSpace(new StringBuffer("I am GOAT.")));
-        System.out.println(new Main().replaceSpace1(new StringBuffer("I am GOAT.")));
+        System.out.println(new Solution().replaceSpace(new StringBuffer("I am GOAT.")));
+        System.out.println(new Solution().replaceSpace1(new StringBuffer("I am GOAT.")));
     }
 
     public String replaceSpace(StringBuffer str) {

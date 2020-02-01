@@ -7,7 +7,7 @@
 
 package exercise_1;
 
-public class Main {
+public class Solution {
 
     public static void main(String[] args) {
         int[][] arrays = new int[10][10];
