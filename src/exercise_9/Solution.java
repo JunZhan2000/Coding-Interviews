@@ -15,6 +15,11 @@ public class Solution {
     }
 
     public int JumpFloorII(int target) {
+        return (int) Math.pow(2, target-1);
+    }
+
+
+    public int JumpFloorII2(int target) {
         if(target <= 0){
             return 0;
         }
