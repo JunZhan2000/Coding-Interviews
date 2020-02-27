@@ -20,5 +20,11 @@ public class Main {
         SortFunction.quickSort(nums);
         System.out.println("快速排序：");
         System.out.println(Arrays.toString(nums));
+
+        nums = new int[]{3, 1, 5, 8, 9, 6, 7, 2, 4};
+
+        System.out.println("归并排序：");
+        SortFunction.mergeSort(nums);
+        System.out.println(Arrays.toString(SortFunction.mergeSort(nums)));
     }
 }

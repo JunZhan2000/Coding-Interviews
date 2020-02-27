@@ -1,5 +1,7 @@
 package sort;
 
+import com.sun.java.accessibility.util.EventID;
+
 public class SortFunction {
     public static int[] bubbleSort(int[] nums){
         if(nums == null || nums.length < 2){
@@ -67,8 +69,8 @@ public class SortFunction {
             return;
         }
 
-//        quickSort(nums, 0, nums.length-1);
-        quickSort2(nums, 0, nums.length-1);
+//        quickSort(nums, 0, nums.length-1);  //原始版本实现
+        quickSort2(nums, 0, nums.length-1);  //《Introduction To Algorithm》版本实现
     }
 
     //原始版本的实现
@@ -132,5 +134,45 @@ public class SortFunction {
         int temp = nums[index1];
         nums[index1] = nums[index2];
         nums[index2] = temp;
+    }
+
+    //归并排序
+    public static int[] mergeSort(int[] nums){
+        if(nums == null || nums.length == 0){
+            return null;
+        }
+        if(nums.length == 1){
+            return nums;
+        }
+
+        int[] result = new int[nums.length];
+        merge(nums, result, 0, nums.length-1);
+        return result;
+    }
+
+    /**
+     * 归并操作
+     * @return 合并后的数组
+     */
+    private static void merge(int[] arr, int[] result, int start, int end){
+        if(start >= end){
+            return;
+        }
+
+        int mid = (end + start) / 2;
+        merge(arr, result, start, mid);
+        merge(arr, result, mid+1, end);
+        int start1 = start, end1 = mid, start2 = mid+1, end2 = end, k = start;
+
+        //将start1:end1、start2:end2中的两个数组合并到result中
+        while (start1 <= end1 && start2 <= end2)
+            result[k++] = arr[start1] < arr[start2] ? arr[start1++] : arr[start2++];
+        while (start1 <= end1)
+            result[k++] = arr[start1++];
+        while (start2 <= end2)
+            result[k++] = arr[start2++];
+        //将排好序的部分数组赋到arr中
+        for(k = start; k <= end; k++)
+            arr[k] = result[k];
     }
 }
