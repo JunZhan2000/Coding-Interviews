@@ -24,19 +24,59 @@ public class Solution {
         System.out.println();
     }
 
-
+    //解法二
     public RandomListNode Clone(RandomListNode pHead) {
+        if(pHead == null)
+            return null;
+
+        //将复制的节点插入原链表，放置在被复制的节点后面
+        RandomListNode mov = pHead, mov2, clonedNode;
+        while (mov != null){
+            clonedNode = new RandomListNode(mov.label);  //复制节点
+            clonedNode.next = mov.next;
+            mov.next = clonedNode;  //插入复制的节点
+            mov = clonedNode.next;  //跳过两个节点，到底原链表的下一节点
+        }
+
+        //复制random指针的值
+        mov = pHead;  //指向原链表的头结点
+        clonedNode = pHead.next;  //复制的头结点
+        while (mov != null){
+            clonedNode.random = mov.random != null ? mov.random.next : null;
+            mov = clonedNode.next;  //跳过两个节点
+            clonedNode = mov != null ? mov.next : null;  //跳过两个节点（防止mov1为空，要做一下判断）
+        }
+
+        //拆分成两个链表
+        mov = pHead;  //原链表的头结点
+        mov2 = pHead.next;  //定位到复制的头结点
+        clonedNode = pHead.next;  //记住复制的头结点，用于返回
+        while (mov != null){
+            mov.next = mov2.next;
+            mov = mov.next;  //跳过两个节点
+
+            mov2.next = mov != null ? mov.next : null;
+            mov2 = mov2.next;  //跳过两个节点
+        }
+
+        return clonedNode;
+    }
+
+    //解法一
+    public RandomListNode Clone2(RandomListNode pHead) {
         if(pHead == null)
             return null;
 
         RandomListNode mov1 = pHead.next, clonedList = new RandomListNode(pHead.label);
         RandomListNode mov2 = clonedList, mov4, mov5;
 
+        //复制节点以及next指针
         while (mov1 != null){
             mov2.next = new RandomListNode(mov1.label);
             mov1 = mov1.next;
             mov2 = mov2.next;
         }
+        //辅助random指针
         mov1 = pHead;
         mov2 = clonedList;
         while (mov1 != null){
