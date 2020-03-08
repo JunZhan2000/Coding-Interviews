@@ -85,6 +85,7 @@ Java虚拟机在执行Java程序时，会将其管理的内存划分为不同的
 ##### 2.2.7 直接内存
 
 * 不是虚拟机运行时数据区的一部分，但被频繁使用
+* NIO类的一种IO方式，可以直接调用Native方法分配堆外内存，在某些场景显著提高性能
 * **下面的看不懂了。。看完后面回来补**
 
 
@@ -145,15 +146,224 @@ Java虚拟机在执行Java程序时，会将其管理的内存划分为不同的
 
 ##### 2.4.1 Java堆溢出
 
+```java
+package learnJVM;
 
+import java.util.List;
+import java.util.ArrayList;
+
+
+/**
+ * 代码清单2-3
+ * 创建过多对象导致Java堆溢出
+ * VM Args：-Xms20m -Xmx20m -XX:+HeapDumpOnOutOfMemoryError
+ */
+
+public class HeapOOM {
+    static class OOMObject {
+    }
+
+    public static void main(String[] args) {
+        List<OOMObject> list = new ArrayList<OOMObject>();
+
+        while (true) {
+            list.add(new OOMObject());
+        }
+    }
+}
+
+```
 
 ##### 2.4.2 虚拟机栈和本地方法栈溢出
 
+* 同时调用过多方法导致Java虚拟机栈溢出
+
+  ```java
+  package learnJVM;
+  
+  /**
+   * 代码清单2-4
+   * 调用过多方法导致Java虚拟机栈溢出
+   * VM Args：-Xss128k
+   * @author zzm
+   */
+  
+  public class JavaVMStackSOF {
+  
+      private int stackLength = 1;
+  
+      public void stackLeak() {
+          stackLength++;
+          stackLeak();
+      }
+  
+      public static void main(String[] args) throws Throwable {
+          JavaVMStackSOF oom = new JavaVMStackSOF();
+          try {
+              oom.stackLeak();
+          } catch (Throwable e) {
+              System.out.println("stack length:" + oom.stackLength);
+              throw e;
+          }
+      }
+  }
+  ```
+
+  
+
+
+
+* 创建过多线程导致内存溢出
+
+  在我下载的Oracle的JDK中，报错为**无法再创建新的本地方法**
+
+  而书中使用的HotSpot虚拟机没有本地方法区和java虚拟机的区别
+
+  ```java
+  package learnJVM;
+  
+  /**
+   * 代码清单2-5
+   * 创建过多线程导致内存溢出
+   * 在我下载的Oracle的JDK中，报错为本地方法栈溢出，而书中使用的HotSpot虚拟机没有本地方法区和java虚拟机的区别
+   * VM Args：-Xss2M （这时候不妨设大些）
+   * @author zzm
+   */
+  public class JavaVMStackOOM {
+  
+      private void dontStop() {
+          while (true) {
+          }
+      }
+  
+      public void stackLeakByThread() {
+          while (true) {
+              Thread thread = new Thread(new Runnable() {
+                  @Override
+                  public void run() {
+                      dontStop();
+                  }
+              });
+              thread.start();
+          }
+      }
+  
+      public static void main(String[] args) throws Throwable {
+          JavaVMStackOOM oom = new JavaVMStackOOM();
+          oom.stackLeakByThread();
+      }
+  }
+  ```
+
 ##### 2.4.3 方法区和运行时常量池溢出
+
+* 方法区的内存溢出（由于创建了大量的动态类）
+
+  ```java
+  /**
+   * VM Args： -XX:PermSize=10M -XX:MaxPermSize=10M
+   * @author zzm
+   */
+  public class JavaMethodAreaOOM {
+  
+  	public static void main(String[] args) {
+  		while (true) {
+  			Enhancer enhancer = new Enhancer();
+  			enhancer.setSuperclass(OOMObject.class);
+  			enhancer.setUseCache(false);
+  			enhancer.setCallback(new MethodInterceptor() {
+  				public Object intercept(Object obj, Method method, Object[] args, MethodProxy proxy) throws Throwable {
+  					return proxy.invokeSuper(obj, args);
+  				}
+  			});
+  			enhancer.create();
+  		}
+  	}
+  
+  	static class OOMObject {
+  
+  	}
+  }
+  ```
+
+  
+
+* 下面的两段代码体现了JDK6和JDK7中关于管理内存的一些区别：**永久代（方法区）的概念**
+
+* String.intern()方法：
+
+  * jdk1.6：若字符串常量池中已经包含该String对象，则返回常量池中对应的对象；否则将该字符串的深拷贝添加到常量池中，并返回常量池中该字符串对象的引用
+  * jdk1.7：和jdk1.6的区别在于：若第一次遇到该String对象，不再拷贝，而是记录一下该引用
+
+* 2-6的代码在jdk1.6中会抛出OOM异常，而在jdk1.7中不会
+
+  ```java
+  /**
+   * 代码清单2-6
+   * 创建过多字面量，导致运行时常量池内存溢出
+   * VM Args：-XX:PermSize=10M -XX:MaxPermSize=10M
+   * @author zzm
+   */
+  public class RuntimeConstantPoolOOM {
+  
+      public static void main(String[] args) {
+          // 使用List保持着常量池引用，避免Full GC回收常量池行为
+          List<String> list = new ArrayList<String>();
+          // 10MB的PermSize在integer范围内足够产生OOM了
+          int i = 0;
+          while (true) {
+              list.add(String.valueOf(i++).intern());
+          }
+      }
+  }
+  ```
+
+* 在jdk1.6中的结果是false,false
+
+  jdk1.7中是true,false（常量池中原先已有"java"的字面量）
+
+  ```java
+  public class RuntimeConstantPoolOOM2 {
+  
+      public static void main(String[] args) {
+          String str1 = new StringBuilder("中国").append("钓鱼岛").toString();
+          System.out.println(str1.intern() == str1);
+  
+          String str2 = new StringBuilder("ja").append("va").toString();
+          System.out.println(str2.intern() == str2);
+      }
+  }
+  ```
 
 ##### 2.4.4 本地直接内存溢出
 
-##### 
+```java
+package learnJVM;
+
+import sun.misc.Unsafe;
+import java.lang.reflect.Field;
+
+/**
+ * 程序清单2-9
+ * 创建过多直接内存导致内存溢出
+ * VM Args：-Xmx20M -XX:MaxDirectMemorySize=10M
+ * @author zzm
+ */
+public class DirectMemoryOOM {
+
+    private static final int _1MB = 1024 * 1024;
+
+    public static void main(String[] args) throws Exception {
+        Field unsafeField = Unsafe.class.getDeclaredFields()[0];
+        unsafeField.setAccessible(true);
+        Unsafe unsafe = (Unsafe) unsafeField.get(null);
+        while (true) {
+            unsafe.allocateMemory(_1MB);
+        }
+    }
+}
+```
 
 #### 2.5 本章小结
 
+本章主要内容为 **java虚拟机中内存的划分，以及在这些区域中出现内存溢出的原因**
