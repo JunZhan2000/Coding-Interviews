@@ -16,7 +16,6 @@ public class SortFunction {
                 }
             }
         }
-
         return nums;
     }
 
